@@ -44,3 +44,20 @@ def plot_function(f, tx=None, ty=None, title=None, min=-2, max=2, figsize=(6,4))
     if ty is not None: ax.set_ylabel(ty)
     if title is not None: ax.set_title(title)
 
+# heatmap method @Ebby
+def show_heatmap(im,learn,cat=2):
+    m = learn.model.eval()
+    xb, = first(learn.dls.test_dl([im]))
+    with hook_output(m[0]) as hook_a: 
+        with hook_output(m[0], grad=True) as hook_g:
+            preds = m(xb)
+            preds[0,int(cat)].backward()
+    
+    acts  = hook_a.stored[0].cpu()
+    avg_acts = acts.mean(0)
+    
+    x_dec = TensorImage(learn.dls.train.decode((xb,))[0][0])
+    _,ax = plt.subplots()
+    x_dec.show(ctx=ax)
+    ax.imshow(avg_acts, alpha=0.6, extent=(0,xb.shape[2],xb.shape[3],0),
+                  interpolation='bilinear', cmap='magma');
