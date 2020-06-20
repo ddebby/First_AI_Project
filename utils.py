@@ -61,3 +61,41 @@ def show_heatmap(im,learn,cat=2):
     x_dec.show(ctx=ax)
     ax.imshow(avg_acts, alpha=0.6, extent=(0,xb.shape[2],xb.shape[3],0),
                   interpolation='bilinear', cmap='magma');
+    
+
+    
+    
+class Hook():
+    def __init__(self, m):
+        self.hook = m.register_forward_hook(self.hook_func)   
+    def hook_func(self, m, i, o): self.stored = o.detach().clone()
+    def __enter__(self, *args): return self
+    def __exit__(self, *args): self.hook.remove()
+        
+class HookBwd():
+    def __init__(self, m):
+        self.hook = m.register_backward_hook(self.hook_func)   
+    def hook_func(self, m, gi, go): self.stored = go[0].detach().clone()
+    def __enter__(self, *args): return self
+    def __exit__(self, *args): self.hook.remove()
+        
+# heatmap method @Ebby
+def show_heatmap_GCAM(im,learn,cat=2):
+    m = learn.model.eval()
+    xb, = first(learn.dls.test_dl([im]))
+    with HookBwd(learn.model[0]) as hook_g: 
+        with Hook(learn.model[0]) as hook:
+            preds = m(xb)
+            act = hook.stored
+        preds[0,int(cat)].backward()
+        grad = hook_g.stored
+    
+    w = grad[0].mean(dim=[1,2], keepdim=True)
+    cam_map = (w * act[0]).sum(0)
+    
+    x_dec = TensorImage(learn.dls.train.decode((xb,))[0][0])
+    _,ax = plt.subplots()
+    x_dec.show(ctx=ax)
+    ax.imshow(cam_map.detach().cpu(), alpha=0.6, extent=(0,xb.shape[2],xb.shape[3],0),
+                  interpolation='bilinear', cmap='magma');
+    
