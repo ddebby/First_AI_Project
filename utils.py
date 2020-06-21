@@ -30,8 +30,8 @@ def get_image_files_sorted(path, recurse=True, folders=None): return get_image_f
 from azure.cognitiveservices.search.imagesearch import ImageSearchClient as api
 from msrest.authentication import CognitiveServicesCredentials as auth
 
-def search_images_bing(key, term, min_sz=128):
-    client = api('https://api.cognitive.microsoft.com', auth(key))
+def search_images_bing(key, term, endpoint='https://api.cognitive.microsoft.com', min_sz=128):
+    client = api(endpoint, auth(key))
     return L(client.images.search(query=term, count=150, min_height=min_sz, min_width=min_sz).value)
 
 
