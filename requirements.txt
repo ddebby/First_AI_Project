@@ -4,4 +4,5 @@ ipywidgets
 matplotlib
 nbdev>=0.2.12
 pandas
+bqplot
 azure-cognitiveservices-search-imagesearch
