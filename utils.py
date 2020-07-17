@@ -159,7 +159,7 @@ class ResultsWidget(object):
         self.w_img.value = im._repr_png_()
         # Fix the width of the image widget and adjust the height
         self.w_img.layout.height = (
-            f"{int(self.IM_WIDTH * (im.size[0]/im.size[1]))}px"
+            f"{int(self.IM_WIDTH * (im.size[1]/im.size[0]))}px"
         )
 
         self.w_gt_label.value = str(self.labels[self.dataset[self.vis_image_index][1]])
@@ -187,8 +187,8 @@ class ResultsWidget(object):
         # ------------
         def image_passes_filters(image_index):
             """Return if image should be shown."""
-            actual_label = str(self.dataset[image_index][1])
-            bo_pred_correct = actual_label == self.pred_labels[image_index]
+            actual_label = int(self.dataset[image_index][1])
+            bo_pred_correct = bool(actual_label == self.label_to_id[self.pred_labels[image_index]])
             if (bo_pred_correct and self.w_filter_correct.value) or (
                 not bo_pred_correct and self.w_filter_wrong.value
             ):
