@@ -228,20 +228,20 @@ class ResultsWidget(object):
         # ------------
         # UI - image + controls (left side)
         # ------------
-        w_next_image_button = widgets.Button(description="Next")
+        w_next_image_button = widgets.Button(description="下一张")
         w_next_image_button.value = "1"
         w_next_image_button.layout = Layout(width="80px")
         w_next_image_button.on_click(button_pressed)
-        w_previous_image_button = widgets.Button(description="Previous")
+        w_previous_image_button = widgets.Button(description="上一张")
         w_previous_image_button.value = "-1"
         w_previous_image_button.layout = Layout(width="80px")
         w_previous_image_button.on_click(button_pressed)
 
         self.w_filename = widgets.Text(
-            value="", description="Name:", layout=Layout(width="200px")
+            value="", description="名称:", layout=Layout(width="200px")
         )
         self.w_path = widgets.Text(
-            value="", description="Path:", layout=Layout(width="200px")
+            value="", description="路径:", layout=Layout(width="200px")
         )
 
         self.w_image_slider = IntSlider(
@@ -272,22 +272,22 @@ class ResultsWidget(object):
             value="Filters (use Image +1/-1 buttons for navigation):"
         )
         self.w_filter_correct = widgets.Checkbox(
-            value=True, description="Correct classifications"
+            value=True, description="正确分类图像"
         )
         self.w_filter_wrong = widgets.Checkbox(
-            value=True, description="Incorrect classifications"
+            value=True, description="错误分类图像"
         )
 
-        w_gt_header = widgets.HTML(value="Ground truth:")
+        w_gt_header = widgets.HTML(value="真实值:")
         self.w_gt_label = widgets.Text(value="")
         self.w_gt_label.layout.width = "360px"
 
-        w_pred_header = widgets.HTML(value="Predictions:")
+        w_pred_header = widgets.HTML(value="预测值:")
         self.w_pred_labels = widgets.Textarea(value="")
         self.w_pred_labels.layout.height = "200px"
         self.w_pred_labels.layout.width = "360px"
 
-        w_scores_header = widgets.HTML(value="Classification scores:")
+        w_scores_header = widgets.HTML(value="分类得分:")
         self.w_scores = bqpyplot.figure()
         self.w_scores.layout.height = "250px"
         self.w_scores.layout.width = "370px"
@@ -323,7 +323,7 @@ class ResultsWidget(object):
                 )
             ]
         )
-        self.ui.set_title(0, "Results viewer")
+        self.ui.set_title(0, "模型结果分析系统")
 
         # Fill UI with content
         self.update()
