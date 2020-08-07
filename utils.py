@@ -40,9 +40,14 @@ def get_image_files_sorted(path, recurse=True, folders=None): return get_image_f
 from azure.cognitiveservices.search.imagesearch import ImageSearchClient as api
 from msrest.authentication import CognitiveServicesCredentials as auth
 
-def search_images_bing(key, term, endpoint='https://api.cognitive.microsoft.com', min_sz=128):
+def search_images_bing(key, term, endpoint='https://api.cognitive.microsoft.com', min_sz=128, count=150):
     client = api(endpoint, auth(key))
-    return L(client.images.search(query=term, count=150, min_height=min_sz, min_width=min_sz).value)
+    if count > 150:
+        result = L(client.images.search(query=term, count=count, offset=None, min_height=min_sz, min_width=min_sz).value) + \
+                    L(client.images.search(query=term, count=count-150, offset=count, min_height=min_sz, min_width=min_sz).value)
+    else:
+        result = L(client.images.search(query=term, count=count, offset=None, min_height=min_sz, min_width=min_sz).value)
+    return result
 
 
 # -
@@ -71,8 +76,6 @@ def show_heatmap(im,learn,cat=2):
     x_dec.show(ctx=ax)
     ax.imshow(avg_acts, alpha=0.6, extent=(0,xb.shape[2],xb.shape[3],0),
                   interpolation='bilinear', cmap='magma');
-    
-
     
     
 class Hook():
