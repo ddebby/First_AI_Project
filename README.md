@@ -1,5 +1,5 @@
-# First_AI_Project
-It's a half day tutorials for AI beginners...
+# （动手实验）构建你的第一个人工智能项目
+> It's a half day tutorials for AI beginners...
 
 <div class="alert alert-block alert-success">  
  <b>Version:</b> v0.1 <b>Date:</b> 2020-06-09 
@@ -39,7 +39,6 @@ It's a half day tutorials for AI beginners...
 <img src="imgs/340.gif" style="width:200;height:150px"> <br>
 </td> 
 </table>
-<caption><center> 自然保护区的监控视频片段</center></caption>
 
 <div class="alert alert-block alert-danger">  
 <b>重要📌</b>
