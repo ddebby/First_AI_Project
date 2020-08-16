@@ -25,9 +25,21 @@ It's a half day tutorials for AI beginners...
 > 假设你所在公司受一个动物保护协会委托，要为他们开发一款软件，用来通过部署在自然保护区的监控摄像头捕获照片，并利用人工智能算法自动识别图像中的动物类型。通过构建这样一套监控系统，有助于他们快速统计相关珍惜动物的生活习性及繁殖情况，有利于提前对濒临灭绝的珍稀物种进行必要的援助。
 </div>
 
-<center class="half">
-    <img src="imgs/181.gif" width="230"/><img src="imgs/218.gif" width="230"/><img src="imgs/246.gif" width="230"/><img src="imgs/340.gif" width="230"/>
-</center>
+<table>
+<td> 
+<img src="imgs/181.gif" style="width:200;height:150px"> <br>
+</td> 
+<td> 
+<img src="imgs/218.gif" style="width:200;height:150px"> <br>
+</td> 
+<td> 
+<img src="imgs/246.gif" style="width:200;height:150px"> <br>
+</td>
+<td> 
+<img src="imgs/340.gif" style="width:200;height:150px"> <br>
+</td> 
+</table>
+<caption><center> 自然保护区的监控视频片段</center></caption>
 
 <div class="alert alert-block alert-danger">  
 <b>重要📌</b>
