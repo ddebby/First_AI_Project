@@ -1,5 +1,7 @@
 # Numpy and pandas by default assume a narrow screen - this fixes that
 from fastai2.vision.all import *
+from fastai2.vision.widgets import *
+from fastai2.data.core import Datasets
 from nbdev.showdoc import *
 from ipywidgets import widgets, Layout, IntSlider
 
@@ -10,7 +12,6 @@ import bqplot
 import bqplot.pyplot as bqpyplot
 import pandas as pd
 
-from fastai2.data.core import Datasets
 import numpy as np
 
 import matplotlib as mpl
