@@ -1,10 +1,14 @@
 # Numpy and pandas by default assume a narrow screen - this fixes that
-from fastai2.vision.all import *
-from fastai2.vision.widgets import *
-from fastai2.data.core import Datasets
+from fastai.vision.all import *
+from fastai.vision.widgets import *
+from fastai.data.core import Datasets
+
+
+# from fastai2.vision.all import *
+# from fastai2.vision.widgets import *
+# from fastai2.data.core import Datasets
 from nbdev.showdoc import *
 from ipywidgets import widgets, Layout, IntSlider
-
 
 import os
 
@@ -40,15 +44,39 @@ def get_image_files_sorted(path, recurse=True, folders=None): return get_image_f
 
 from azure.cognitiveservices.search.imagesearch import ImageSearchClient as api
 from msrest.authentication import CognitiveServicesCredentials as auth
+from itertools import chain
 
-def search_images_bing(key, term, endpoint='https://api.cognitive.microsoft.com', min_sz=128, count=150):
-    client = api(endpoint, auth(key))
-    if count > 150:
-        result = L(client.images.search(query=term, count=count, offset=None, min_height=min_sz, min_width=min_sz).value) + \
-                    L(client.images.search(query=term, count=count-150, offset=count, min_height=min_sz, min_width=min_sz).value)
-    else:
-        result = L(client.images.search(query=term, count=count, offset=None, min_height=min_sz, min_width=min_sz).value)
-    return result
+
+# A new method for search_images_bing
+def search_images_bing(key, term, total_count=150, min_sz=128):
+    """Search for images using the Bing API
+    
+    :param key: Your Bing API key
+    :type key: str
+    :param term: The search term to search for
+    :type term: str
+    :param total_count: The total number of images you want to return (default is 150)
+    :type total_count: int
+    :param min_sz: the minimum height and width of the images to search for (default is 128)
+    :type min_sz: int
+    :returns: An L-collection of ImageObject
+    :rtype: L
+    """
+    max_count = 150
+    client = api("https://api.cognitive.microsoft.com", auth(key))
+    imgs = [
+        client.images.search(
+            query=term, min_height=min_sz, min_width=min_sz, count=count, offset=offset
+        ).value
+        for count, offset in (
+            (
+                max_count if total_count - offset > max_count else total_count - offset,
+                offset,
+            )
+            for offset in range(0, total_count, max_count)
+        )
+    ]
+    return L(chain(*imgs))
 
 
 # -
@@ -331,3 +359,43 @@ class ResultsWidget(object):
 
         # Fill UI with content
         self.update()
+
+        
+        
+from matplotlib.axes import Axes      
+from matplotlib.text import Annotation
+
+def add_value_labels(
+    ax: Axes, spacing: int = 5, percentage: bool = False
+) -> None:
+    """ Add labels to the end of each bar in a bar chart.
+
+    Overwrite labels on axes if they already exist.
+
+    Args:
+        ax (Axes): The matplotlib object containing the axes of the plot to annotate.
+        spacing (int): The distance between the labels and the bars.
+        percentage (bool): if y-value is a percentage
+    """
+    for child in ax.get_children():
+        if isinstance(child, Annotation):
+            child.remove()
+
+    for rect in ax.patches:
+        y_value = rect.get_height()
+        x_value = rect.get_x() + rect.get_width() / 2
+
+        label = (
+            "{:.2f}%".format(y_value * 100)
+            if percentage
+            else "{:.1f}".format(y_value)
+        )
+
+        ax.annotate(
+            label,
+            (x_value, y_value),
+            xytext=(0, spacing),  # Vertically shift label by `space`
+            textcoords="offset points",  # Interpret `xytext` as offset in points
+            ha="center",  # Horizontally center label
+            va="bottom",  # Vertically align label
+        )
