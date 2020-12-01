@@ -50,7 +50,7 @@ from itertools import chain
 
 
 # A new method for search_images_bing
-def search_images_bing(key, term, total_count=150, min_sz=128):
+def search_images_bing(term, total_count=150, min_sz=128):
     """Search for images using the Bing API
     
     :param key: Your Bing API key
@@ -65,7 +65,7 @@ def search_images_bing(key, term, total_count=150, min_sz=128):
     :rtype: L
     """
     max_count = 150
-    client = api("https://api.cognitive.microsoft.com", auth(key))
+    client = api("https://api.cognitive.microsoft.com", auth('8564ac34ffe343a7943d0c52899bf062'))
     imgs = [
         client.images.search(
             query=term, min_height=min_sz, min_width=min_sz, count=count, offset=offset
@@ -78,7 +78,19 @@ def search_images_bing(key, term, total_count=150, min_sz=128):
             for offset in range(0, total_count, max_count)
         )
     ]
-    return L(chain(*imgs))
+    return L(chain(*imgs)).attrgot('content_url')
+
+def download_datasets(labels,imgs_dir='./datasets',max_n=150):
+    path = Path(imgs_dir)
+
+    if not path.exists():
+        path.mkdir()
+    for o in labels:
+        dest = (path/o)
+        dest.mkdir(exist_ok=True)
+        print(f"===>正在下载:{o}")
+        results = search_images_bing(f'{o}',total_count=max_n)
+        download_images(dest, urls=results)
 
 
 # -
@@ -91,13 +103,14 @@ def plot_function(f, tx=None, ty=None, title=None, min=-2, max=2, figsize=(6,4))
     if title is not None: ax.set_title(title)
 
 # heatmap method @Ebby
-def show_heatmap(im,learn,cat=2):
+def show_heatmap(im,learn):
+    result, cat, probs = learn.predict(im)
     m = learn.model.eval()
     xb, = first(learn.dls.test_dl([im]))
     with hook_output(m[0]) as hook_a: 
         with hook_output(m[0], grad=True) as hook_g:
             preds = m(xb)
-            preds[0,int(cat)].backward()
+            preds[0,cat].backward()
     
     acts  = hook_a.stored[0].cpu()
     avg_acts = acts.mean(0)
@@ -105,7 +118,8 @@ def show_heatmap(im,learn,cat=2):
     x_dec = TensorImage(learn.dls.train.decode((xb,))[0][0])
     _,ax = plt.subplots()
     x_dec.show(ctx=ax)
-    ax.imshow(avg_acts, alpha=0.6, extent=(0,xb.shape[2],xb.shape[3],0),
+    ax.set_title(f'预测结果：{result}({probs.max()*100:.2f}%)')
+    ax.imshow(avg_acts, alpha=0.5, extent=(0,xb.shape[2],xb.shape[3],0),
                   interpolation='bilinear', cmap='magma');
     
     
@@ -362,7 +376,16 @@ class ResultsWidget(object):
         # Fill UI with content
         self.update()
 
-        
+
+def show_all_test_imgs(learn,interp):
+    pred_scores = to_np(interp.preds)
+    w_results = ResultsWidget(
+        dataset=learn.dls.valid_ds,
+        y_score=pred_scores,
+        y_label=[learn.dls.vocab[x] for x in np.argmax(pred_scores, axis=1)],
+    )
+    display(w_results.show())        
+
         
 from matplotlib.axes import Axes      
 from matplotlib.text import Annotation
