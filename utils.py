@@ -6,9 +6,6 @@ from fastai.data.core import Datasets
 # Bing Downloader
 from bing_image_downloader import downloader
 
-# from fastai2.vision.all import *
-# from fastai2.vision.widgets import *
-# from fastai2.data.core import Datasets
 from nbdev.showdoc import *
 from ipywidgets import widgets, Layout, IntSlider
 
@@ -31,7 +28,6 @@ mpl.rcParams['font.family']='sans-serif'
 mpl.rcParams['axes.unicode_minus'] = False 
 
 
-
 set_seed(42)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -48,9 +44,8 @@ from azure.cognitiveservices.search.imagesearch import ImageSearchClient as api
 from msrest.authentication import CognitiveServicesCredentials as auth
 from itertools import chain
 
-
 # A new method for search_images_bing
-def search_images_bing(term, total_count=150, min_sz=128):
+def search_images_bing(term, total_count=150, min_sz=128, key='8564ac34ffe343a7943d0c52899bf062'):
     """Search for images using the Bing API
     
     :param key: Your Bing API key
@@ -65,7 +60,7 @@ def search_images_bing(term, total_count=150, min_sz=128):
     :rtype: L
     """
     max_count = 150
-    client = api("https://api.cognitive.microsoft.com", auth('8564ac34ffe343a7943d0c52899bf062'))
+    client = api("https://api.cognitive.microsoft.com", auth(key))
     imgs = [
         client.images.search(
             query=term, min_height=min_sz, min_width=min_sz, count=count, offset=offset
@@ -386,7 +381,180 @@ def show_all_test_imgs(learn,interp):
     )
     display(w_results.show())        
 
+
+'''
+修改Interpretation中的plot loss方法，把有些展示内容做的更加直观
+
+interpret中核心函数是通过 self.dl_pre_show_batch(b) 实现信息的解码
+'''
+from random import randint
+def plot_results(interp:ClassificationInterpretation, n=4):
+    losses,idx = interp.top_losses()
+    max_n = len(idx)
+    if not isinstance(interp.inputs, tuple): interp.inputs = (interp.inputs,)
+    if isinstance(interp.inputs[0], Tensor): inps = tuple(o[idx] for o in interp.inputs)
+    else: inps = interp.dl.create_batch(interp.dl.before_batch([tuple(o[i] for o in interp.inputs) for i in idx]))
         
+    b = inps + tuple(o[idx] for o in (interp.targs if is_listy(interp.targs) else (interp.targs,)))
+    x,y,its = interp.dl._pre_show_batch(b,max_n)
+    
+    b_out = inps + tuple(o[idx] for o in (interp.decoded if is_listy(interp.decoded) else (interp.decoded,)))
+    x1,y1,outs = interp.dl._pre_show_batch(b_out, max_n)
+    preds = outs.itemgot(slice(len(inps), None))
+    
+    fig, ax = plt.subplots(3,n, figsize=(20,15))
+    fig.suptitle('预测结果分析(预测值/真实值/损失/置信度)',fontsize=20)
+    # Random
+    for i in range(n):
+        r_index = randint(0,max_n)
+        id = idx[r_index]
+        (im, ture_v) = its[r_index] 
+        im = im.permute((1,2,0))
+        ax[0,i].imshow(im)
+        ax[0,i].set_xticks([])
+        ax[0,i].set_yticks([])
+        ax[0,i].set_title(f'{preds[r_index][0]} / {ture_v} / {interp.losses[id]:.2f} / {interp.preds[id][y1[r_index]]:.2f}')
+    ax[0,0].set_ylabel('随机\n取样', fontsize=16, rotation=0, labelpad=80)
+    
+    
+    for i in range(n):
+        id = idx[i]
+        #im,cl = interp.data.dl(DatasetType.Valid).dataset[idx]
+        (im, ture_v) = its[i] 
+        im = im.permute((1,2,0))
+        ax[1,i].imshow(im)
+        ax[1,i].set_xticks([])
+        ax[1,i].set_yticks([])
+        ax[1,i].set_title(f'{preds[i][0]}  / {ture_v} / {interp.losses[id]:.2f} / {interp.preds[id][y1[i]]:.2f}')
+    ax[1,0].set_ylabel('最差\n预测', fontsize=16, rotation=0, labelpad=80)
+
+
+    # Most correct or least losses
+    for i in range(n):
+        t = max_n - i - 1
+        id = idx[t]
+        (im, ture_v) = its[t] 
+        im = im.permute((1,2,0))
+        ax[2,i].imshow(im)
+        ax[2,i].set_xticks([])
+        ax[2,i].set_yticks([])
+        ax[2,i].set_title(f'{preds[t][0]}  / {ture_v} / {interp.losses[id]:.2f} / {interp.preds[id][y1[t]]:.2f}')
+    ax[2,0].set_ylabel('最佳\n预测', fontsize=16, rotation=0, labelpad=80)
+    
+    
+    '''
+修改Interpretation中的plot loss方法，把有些展示内容做的更加直观
+
+interpret中核心函数是通过 self.dl_pre_show_batch(b) 实现信息的解码
+'''
+    
+# hook into forward pass
+def hooked_backward(m, oneBatch, cat):
+    # we hook into the convolutional part = m[0] of the model
+    with hook_output(m[0]) as hook_a: 
+        with hook_output(m[0], grad=True) as hook_g:
+            preds = m(oneBatch)
+            preds[0,int(cat)].backward()
+    return hook_a,hook_g
+
+# We can create a utility function for getting a validation image with an activation map
+def getHeatmap(learner, input, target):
+    """Returns the validation set image and the activation map"""
+    # this gets the model
+    m = learner.model.eval().cpu()   
+
+    # attach hooks
+    hook_a,hook_g = hooked_backward(m, input, target)
+    # get convolutional activations and average from channels
+    acts = hook_a.stored[0].cpu()
+    #avg_acts = acts.mean(0)
+
+    # Grad-CAM
+    grad = hook_g.stored[0][0].cpu()
+    grad_chan = grad.mean(1).mean(1)
+    grad.shape,grad_chan.shape
+    mult = (acts*grad_chan[...,None,None]).mean(0)
+    return mult
+    
+# Then, modify our plotting func a bit
+def plot_heatmap_overview(interp:ClassificationInterpretation,learn, n=4):
+    # top losses will return all validation losses and indexes sorted by the largest first
+ 
+    losses,idx = interp.top_losses()
+    max_n = len(idx)
+    if not isinstance(interp.inputs, tuple): interp.inputs = (interp.inputs,)
+    if isinstance(interp.inputs[0], Tensor): inps = tuple(o[idx] for o in interp.inputs)
+    else: inps = interp.dl.create_batch(interp.dl.before_batch([tuple(o[i] for o in interp.inputs) for i in idx]))
+        
+    b = inps + tuple(o[idx] for o in (interp.targs if is_listy(interp.targs) else (interp.targs,)))
+    x,y,its = interp.dl._pre_show_batch(b,max_n)
+    
+    b_out = inps + tuple(o[idx] for o in (interp.decoded if is_listy(interp.decoded) else (interp.decoded,)))
+    x1,y1,outs = interp.dl._pre_show_batch(b_out, max_n)
+    preds = outs.itemgot(slice(len(inps), None))
+    
+    
+    
+    fig, ax = plt.subplots(3,n, figsize=(20,16))
+    fig.suptitle('模型预测分析(预测值/实际值/损失/置信度)',fontsize=20)
+
+    # Random
+    for i in range(n):
+        r_index = randint(0,max_n)
+        id = idx[r_index]
+        (im, ture_v) = its[r_index] 
+        im = im.permute((1,2,0))
+        act = getHeatmap(learn, interp.inputs[0][id].unsqueeze(0), interp.targs[id])
+        
+        H,W = im.shape[:2]
+ 
+        ax[0,i].imshow(im)
+        ax[0,i].imshow(im, cmap=plt.cm.gray)
+        ax[0,i].imshow(act, alpha=0.5, extent=(0,H,W,0),
+              interpolation='bilinear', cmap='inferno')
+        ax[0,i].set_xticks([])
+        ax[0,i].set_yticks([])
+        ax[0,i].set_title(f'{preds[r_index][0]} / {ture_v} / {interp.losses[id]:.2f} / {interp.preds[id][y1[r_index]]:.2f}')
+    ax[0,0].set_ylabel('随机\n取样', fontsize=16, rotation=0, labelpad=80)
+      
+    # Most incorrect or top losses
+    for i in range(n):
+        id = idx[i]
+        act = getHeatmap(learn, interp.inputs[0][id].unsqueeze(0), interp.targs[id])
+        (im, ture_v) = its[i] 
+        im = im.permute((1,2,0))
+        
+        H,W = im.shape[:2]
+
+        ax[1,i].imshow(im)
+        ax[1,i].imshow(im, cmap=plt.cm.gray)
+        ax[1,i].imshow(act, alpha=0.5, extent=(0,H,W,0),
+              interpolation='bilinear', cmap='inferno')
+        ax[1,i].set_xticks([])
+        ax[1,i].set_yticks([])
+        ax[1,i].set_title(f'{preds[i][0]}  / {ture_v} / {interp.losses[id]:.2f} / {interp.preds[id][y1[i]]:.2f}')
+    ax[1,0].set_ylabel('最差\n预测', fontsize=16, rotation=0, labelpad=80)
+    
+    
+    # Most correct or least losses
+    for i in range(n):
+        t = max_n - i - 1
+        id = idx[t]
+        act = getHeatmap(learn, interp.inputs[0][id].unsqueeze(0), interp.targs[id])
+        (im, ture_v) = its[t] 
+        im = im.permute((1,2,0))
+        
+        H,W = im.shape[:2]
+        ax[2,i].imshow(im)
+        ax[2,i].imshow(im, cmap=plt.cm.gray)
+        ax[2,i].imshow(act, alpha=0.5, extent=(0,H,W,0),
+              interpolation='bilinear', cmap='inferno')
+        ax[2,i].set_xticks([])
+        ax[2,i].set_yticks([])
+        ax[2,i].set_title(f'{preds[t][0]}  / {ture_v} / {interp.losses[id]:.2f} / {interp.preds[id][y1[t]]:.2f}')
+    ax[2,0].set_ylabel('最佳\n预测', fontsize=16, rotation=0, labelpad=80)    
+    
+    
 from matplotlib.axes import Axes      
 from matplotlib.text import Annotation
 
