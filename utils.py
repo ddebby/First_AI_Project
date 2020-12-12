@@ -87,6 +87,14 @@ def download_datasets(labels,imgs_dir='./datasets',max_n=150):
         results = search_images_bing(f'{o}',total_count=max_n)
         download_images(dest, urls=results)
 
+        
+# data clean
+def data_clean(images):
+    failed = verify_images(images)
+    failed_p = [str(o) + "\n" for o in failed] 
+    l = "".join(failed_p)
+    print(f">当前数据集中存在{len(failed)}张异常数据;\n------------------------------\n {l}")
+    failed.map(Path.unlink)
 
 # -
 def plot_function(f, tx=None, ty=None, title=None, min=-2, max=2, figsize=(6,4)):
