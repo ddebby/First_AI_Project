@@ -75,7 +75,7 @@ def search_images_bing(term, total_count=150, min_sz=128, key='8564ac34ffe343a79
     ]
     return L(chain(*imgs)).attrgot('content_url')
 
-def download_datasets(labels,imgs_dir='./datasets',max_n=150):
+def download_datasets(labels,imgs_dir="data",max_n=150):
     path = Path(imgs_dir)
 
     if not path.exists():
@@ -86,7 +86,7 @@ def download_datasets(labels,imgs_dir='./datasets',max_n=150):
         print(f"===>正在下载:{o}")
         results = search_images_bing(f'{o}',total_count=max_n)
         download_images(dest, urls=results)
-
+    return path
         
 # data clean
 def data_clean(images):
