@@ -5,6 +5,7 @@ matplotlib
 nbdev>=0.2.12
 pandas
 bqplot
-bing-image-downloader
 bayesian-optimization
 seeme
+python-magic
+icrawler

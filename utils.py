@@ -17,6 +17,7 @@ import pandas as pd
 
 import numpy as np
 
+# Configs for matplotlib
 import matplotlib as mpl
 # mpl.rcParams['figure.dpi']= 200
 mpl.rcParams['savefig.dpi']= 200
