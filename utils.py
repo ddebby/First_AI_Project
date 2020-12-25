@@ -46,7 +46,7 @@ from msrest.authentication import CognitiveServicesCredentials as auth
 from itertools import chain
 
 # A new method for search_images_bing
-def search_images_bing(term, total_count=150, min_sz=128, key='8564ac34ffe343a7943d0c52899bf062'):
+def search_images_bing(term, total_count=150, min_sz=128, key=''):
     """Search for images using the Bing API
     
     :param key: Your Bing API key
