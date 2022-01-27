@@ -1,12 +1,11 @@
 '''
-!pip install python-magic --quiet
 !pip install icrawler --quiet
 
 '''
 
 import os, sys, shutil
 from pathlib import Path
-import hashlib, magic
+import hashlib
 import icrawler
 from icrawler.builtin import GoogleImageCrawler, BingImageCrawler, BaiduImageCrawler, FlickrImageCrawler
 
@@ -89,17 +88,17 @@ def hashfile(path:Path)->str:
             buf = f.read(blocksize)
     return hasher.hexdigest()
 
-def filter_images(image_dir:Path, img_type:str='JPEG')->int:
-    """Filter (keep) only pictures of a specified type. The default is jpeg"""
-    nons = 0
-    path = Path(image_dir)
-    for f in path.iterdir():
-        try: 
-            jpeg = magic.from_file(f.as_posix())[:4]
-            if f.is_file() and jpeg != img_type:
-                nons = nons + 1
-                f.unlink()
-        except: 
-            nons += 1   
-            f.unlink() 
-    return nons
+# def filter_images(image_dir:Path, img_type:str='JPEG')->int:
+#     """Filter (keep) only pictures of a specified type. The default is jpeg"""
+#     nons = 0
+#     path = Path(image_dir)
+#     for f in path.iterdir():
+#         try: 
+#             jpeg = magic.from_file(f.as_posix())[:4]
+#             if f.is_file() and jpeg != img_type:
+#                 nons = nons + 1
+#                 f.unlink()
+#         except: 
+#             nons += 1   
+#             f.unlink() 
+#     return nons
