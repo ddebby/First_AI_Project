@@ -4,7 +4,7 @@ from fastai.vision.widgets import *
 from fastai.data.core import Datasets
 
 # Bing Downloader
-from bing_image_downloader import downloader
+#from bing_image_downloader import downloader
 
 from nbdev.showdoc import *
 from ipywidgets import widgets, Layout, IntSlider
