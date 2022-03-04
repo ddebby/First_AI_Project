@@ -6,7 +6,7 @@ from fastai.data.core import Datasets
 # Bing Downloader
 #from bing_image_downloader import downloader
 
-from nbdev.showdoc import *
+#from nbdev.showdoc import *
 from ipywidgets import widgets, Layout, IntSlider
 
 import os
